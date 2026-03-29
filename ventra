@@ -1,0 +1,190 @@
+-- [[ 💎 VENTRA PREMIUM 👑 - E-INTERACT EDITION ]] --
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local _G = {
+    Settings = {
+        AutoFarm = false,
+        TargetLimit = 10,
+        CollectDistance = 50, -- Jarak auto-interact
+        DatabaseURL = "https://pastebin.com/raw/LINK_RAW_PASTEBIN_KAMU" -- ISI LINK RAW PASTEBIN ANDA
+    }
+}
+
+local Inventory = {
+    ["Water"] = {count = 0, icon = "💧"}, 
+    ["Gelatin"] = {count = 0, icon = "🍬"}, 
+    ["Sugar"] = {count = 0, icon = "🍚"},
+    ["Marshmallow Small"] = {count = 0, icon = "☁️"},
+    ["Marshmallow Medium"] = {count = 0, icon = "☁️"},
+    ["Marshmallow Large"] = {count = 0, icon = "☁️"}
+}
+
+local HWID = game:GetService("RbxAnalyticsService"):GetClientId()
+local UIS = game:GetService("UserInputService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+-- [[ UI CONSTRUCTION ]] --
+local MainGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame", MainGui)
+MainFrame.Size = UDim2.new(0, 360, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -180, 0.5, -210)
+MainFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
+
+local Stroke = Instance.new("UIStroke", MainFrame)
+Stroke.Thickness = 3
+Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, 0, 0, 60)
+Title.Text = "💎 VENTRA PREMIUM 👑"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+
+-- Tracker UI (Live Progres)
+local TrackerFrame = Instance.new("Frame", MainGui)
+TrackerFrame.Size = UDim2.new(0, 220, 0, 190)
+TrackerFrame.Position = UDim2.new(1, -230, 0.5, -95)
+TrackerFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+TrackerFrame.BackgroundTransparency = 0.2
+TrackerFrame.Visible = false
+Instance.new("UICorner", TrackerFrame)
+local TrackerStroke = Instance.new("UIStroke", TrackerFrame)
+TrackerStroke.Thickness = 2
+
+local TrackerText = Instance.new("TextLabel", TrackerFrame)
+TrackerText.Size = UDim2.new(1, -20, 1, -10)
+TrackerText.Position = UDim2.new(0, 10, 0, 5)
+TrackerText.BackgroundTransparency = 1
+TrackerText.TextColor3 = Color3.fromRGB(255, 255, 255)
+TrackerText.TextSize = 13
+TrackerText.Font = Enum.Font.Code
+TrackerText.TextXAlignment = Enum.TextXAlignment.Left
+TrackerText.RichText = true
+
+local function UpdateTracker()
+    local t = "<b>📊 LIVE INVENTORY</b>\n\n"
+    for name, data in pairs(Inventory) do
+        t = t .. string.format("%s %s: <font color='#00FF00'>%d</font>/%d\n", data.icon, name, data.count, _G.Settings.TargetLimit)
+    end
+    TrackerText.Text = t
+end
+
+-- Key Input
+local KeyInput = Instance.new("TextBox", MainFrame)
+KeyInput.Size = UDim2.new(0, 300, 0, 50)
+KeyInput.Position = UDim2.new(0.5, -150, 0.35, 0)
+KeyInput.PlaceholderText = "KUNCI: VENTRA - PREMIUM"
+KeyInput.Text = ""
+KeyInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyInput.Font = Enum.Font.GothamBold
+Instance.new("UICorner", KeyInput)
+
+-- Limit Input
+local LimitInput = Instance.new("TextBox", MainFrame)
+LimitInput.Size = UDim2.new(0, 300, 0, 50)
+LimitInput.Position = UDim2.new(0.5, -150, 0.52, 0)
+LimitInput.PlaceholderText = "HAD (1-100)"
+LimitInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+LimitInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", LimitInput)
+
+local ActionBtn = Instance.new("TextButton", MainFrame)
+ActionBtn.Size = UDim2.new(0, 300, 0, 65)
+ActionBtn.Position = UDim2.new(0.5, -150, 0.78, 0)
+ActionBtn.Text = "LOGIN & AUTO-E"
+ActionBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ActionBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", ActionBtn)
+
+-- [[ 🤖 ENJIN AUTO-INTERACT (AUTO-E) ]] --
+local function StartAutoE()
+    TrackerFrame.Visible = true
+    UpdateTracker()
+    
+    task.spawn(function()
+        while _G.Settings.AutoFarm do
+            task.wait(0.25) -- Kelajuan imbasan bahan
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    for name, info in pairs(Inventory) do
+                        if string.find(obj.Name, name) and info.count < _G.Settings.TargetLimit then
+                            local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+                            
+                            if part and (hrp.Position - part.Position).Magnitude < _G.Settings.CollectDistance then
+                                local prompt = obj:FindFirstChildOfClass("ProximityPrompt") or part:FindFirstChildOfClass("ProximityPrompt")
+                                
+                                if prompt and prompt.Enabled then
+                                    -- SISTEM TEKAN E SECARA AUTOMATIK
+                                    prompt.HoldDuration = 0 -- Bypass masa tekan lama
+                                    fireproximityprompt(prompt) -- Fungsi simulasi tekan E
+                                    
+                                    info.count = info.count + 1
+                                    UpdateTracker()
+                                    task.wait(0.4) -- Jeda keselamatan anti-kick
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+-- [[ VERIFIKASI LOGIN ]] --
+ActionBtn.MouseButton1Click:Connect(function()
+    local userK = KeyInput.Text
+    local userL = tonumber(LimitInput.Text) or 10
+    
+    ActionBtn.Text = "MENYAMBUNG..."
+    
+    local success, data = pcall(function() return game:HttpGet(_G.Settings.DatabaseURL) end)
+    
+    if success and string.find(data, userK .. ":" .. HWID) then
+        _G.Settings.TargetLimit = math.clamp(userL, 1, 100)
+        _G.Settings.AutoFarm = true
+        ActionBtn.Text = "✅ AUTO-E AKTIF"
+        ActionBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        
+        task.wait(1.5)
+        MainFrame:TweenPosition(UDim2.new(0.5, -180, -0.7, 0), "In", "Back", 0.7)
+        StartAutoE()
+    else
+        ActionBtn.Text = "❌ KUNCI SALAH"
+        ActionBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+        task.wait(2)
+        ActionBtn.Text = "LOGIN & AUTO-E"
+        ActionBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    end
+end)
+
+-- Kesan RGB & Sistem Drag
+task.spawn(function()
+    local h = 0
+    while true do
+        local c = Color3.fromHSV(h, 0.8, 1)
+        Stroke.Color, TrackerStroke.Color, Title.TextColor3 = c, c, c
+        h = h + 0.005
+        task.wait(0.03)
+    end
+end)
+
+local dragStart, startPos, dragging
+MainFrame.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; dragStart = i.Position; startPos = MainFrame.Position end end)
+UIS.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+    local d = i.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+end end)
+UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+UIS.InputBegan:Connect(function(i, p) if not p and i.KeyCode == Enum.KeyCode.RightControl then MainFrame.Visible = not MainFrame.Visible end end)
